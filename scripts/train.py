@@ -58,6 +58,7 @@ def main():
     num_layers = 3
     num_epochs = 20
     learning_rate = 1e-3
+    dropout_rate = 0.3
     
     # 데이터 로드
     train_dataset = SpeechDataset('data/preprocessed/train')
@@ -67,7 +68,7 @@ def main():
     val_loader = DataLoader(val_dataset, batch_size=16, shuffle=False, collate_fn=collate_fn)
     
     # 모델, 손실 함수, 옵티마이저
-    model = DeepSpeech(input_size, hidden_size, num_classes, num_layers).to(device)
+    model = DeepSpeech(input_size, hidden_size, num_classes, dropout_rate).to(device)
     criterion = nn.CTCLoss(blank=0, zero_infinity=True)
     optimizer = optim.Adam(model.parameters(), lr=learning_rate)
     
