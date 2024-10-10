@@ -5,6 +5,7 @@ from dataset import SpeechDataset, collate_fn
 from torch.utils.data import DataLoader
 from model import DeepSpeech
 import torch.nn.functional as F
+from prepreprocess import phonetic_map, reversed_phonetic_map, encode_phonetic, decode_phonetic
 
 def greedy_decoder(output, vocab):
     """
@@ -34,7 +35,7 @@ def main():
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     input_size = 40
     hidden_size = 256
-    num_classes = 30
+    num_classes = 42
     num_layers = 3
     model_path = 'models/deepspeech_final.pth'
     vocab_path = 'data/vocab.txt'
@@ -52,7 +53,7 @@ def main():
     test_loader = DataLoader(test_dataset, batch_size=16, shuffle=False, collate_fn=collate_fn)
     
     # 예측 및 디코딩
-    for batch in test_loader:
+    for batch, test_name in zip(test_loader, test_dataset.samples):
         mfcc, transcript, input_lengths, target_lengths = batch
         mfcc = mfcc.to(device)
         
@@ -63,7 +64,11 @@ def main():
             preds = torch.argmax(log_probs, dim=2)
         
         decoded = greedy_decoder(log_probs, vocab)
-        print('Predictions:', decoded)
+
+        decoded = ' '.join(decoded)
+        print('Predictions:', decode_phonetic(decoded))
+        print('True:', test_name)
+        break
 
 if __name__ == '__main__':
     main()

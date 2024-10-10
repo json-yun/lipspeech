@@ -54,7 +54,7 @@ def main():
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     input_size = 40  # MFCC 수
     hidden_size = 256
-    num_classes = 30  # vocab 크기
+    num_classes = 42  # vocab 크기
     num_layers = 3
     num_epochs = 20
     learning_rate = 1e-3
