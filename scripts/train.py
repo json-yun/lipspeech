@@ -56,7 +56,7 @@ def main():
     hidden_size = 256
     num_classes = 42  # vocab 크기
     num_layers = 3
-    num_epochs = 20
+    num_epochs = 50
     learning_rate = 1e-3
     dropout_rate = 0.3
     

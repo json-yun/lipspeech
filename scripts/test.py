@@ -6,6 +6,7 @@ from torch.utils.data import DataLoader
 from model import DeepSpeech
 import torch.nn.functional as F
 from prepreprocess import phonetic_map, reversed_phonetic_map, encode_phonetic, decode_phonetic
+import os
 
 def greedy_decoder(output, vocab):
     """
@@ -37,6 +38,7 @@ def main():
     hidden_size = 256
     num_classes = 42
     num_layers = 3
+    dropout_rate = 0.3
     model_path = 'models/deepspeech_final.pth'
     vocab_path = 'data/vocab.txt'
     
@@ -44,7 +46,7 @@ def main():
     vocab = load_vocab(vocab_path)
     
     # 모델 로드
-    model = DeepSpeech(input_size, hidden_size, num_classes, num_layers).to(device)
+    model = DeepSpeech(input_size, hidden_size, num_classes, dropout_rate).to(device)
     model.load_state_dict(torch.load(model_path, map_location=device, weights_only=False))
     model.eval()
     
@@ -66,8 +68,9 @@ def main():
         decoded = greedy_decoder(log_probs, vocab)
 
         decoded = ' '.join(decoded)
-        print('Predictions:', decode_phonetic(decoded))
-        print('True:', test_name)
+        print('Predictions:', decoded)
+        with open(os.path.join('data/test/transcripts', test_name.split('.pt')[0]+'.txt')) as f:
+            print('True: ', f.readline())
         break
 
 if __name__ == '__main__':

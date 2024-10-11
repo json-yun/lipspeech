@@ -7,6 +7,7 @@ import shutil
 import sys
 from g2p_en import G2p
 import nltk
+import random
 
 phonetic_map = {
     'AA': 'a', 'AE': 'a', 'AH': 'a', 'AO': 'o', 'AW': 'aw', 'AY': 'ay', 'B': 'b', 'CH': 'c',
@@ -23,45 +24,88 @@ reversed_phonetic_map = {
     'p': 'P', 's': 'S', 'x': 'ZH', 't': 'T', 'u': 'UH', 'uw': 'UW', 'v': 'V', 'w': 'W', 
     'z': 'Z', ' ': ' ', '': ''
     }
-
-# call func each file in child path
-def iter_dir(dir: str, func: callable) -> None:
-    for next in os.scandir(dir):
-        if next.is_dir():
-            iter_dir(os.path.join(dir, next.name), func)
-        else:
-            func(os.path.join(dir, next.name))
-
 def encode_phonetic(phonetics: list[str]) -> list[str]:
     return [phonetic_map[w] if not w.endswith(('0', '1', '2')) else phonetic_map[w[:-1]] for w in phonetics]
 
 def decode_phonetic(phonetics_code: str) -> str:
     return ' '.join(reversed_phonetic_map[w] for w in phonetics_code)
 
-def alphabet_to_phonetic(sentence: str) -> list[str]:
+def alphabet_to_phonetic(sentence: str, g2p) -> str:
     phonetic_encoded = ''.join(encode_phonetic(g2p(sentence)))
 
     return phonetic_encoded
 
-def prepreprocess(file_name: str):
-    if file_name.endswith('.txt'):
-        with open(file_name, 'r', encoding='utf-8') as f:
-            for line in f.readlines():
-                name, *text = line.split()
-                sentence = ' '.join(text)
-                encoded = alphabet_to_phonetic(sentence)
-                output_file_name = os.path.join(dest_dir, 'transcripts', name)
-                with open(output_file_name + '.txt', 'w', encoding='utf-8') as output:
-                    output.write(encoded)
-    else:
-        shutil.copy(file_name, os.path.join(dest_dir, 'audio'))
-        pass
+def process_text_files(src_dir: str, g2p) -> dict:
+    processed_texts = {}
+    for root, _, filenames in os.walk(src_dir):
+        for filename in filenames:
+            if filename.endswith('.txt'):
+                file_path = os.path.join(root, filename)
+                with open(file_path, 'r', encoding='utf-8') as f:
+                    for line in f.readlines():
+                        name, *text = line.split()
+                        sentence = ' '.join(text)
+                        encoded = alphabet_to_phonetic(sentence, g2p)
+                        processed_texts[name] = encoded
+    return processed_texts
+
+def collect_file_pairs(src_dir: str, processed_texts: dict) -> list:
+    file_pairs = []
+    for root, _, filenames in os.walk(src_dir):
+        for filename in filenames:
+            if not filename.endswith('.txt'):
+                audio_path = os.path.join(root, filename)
+                base_name = os.path.splitext(filename)[0]
+                if base_name in processed_texts:
+                    file_pairs.append((audio_path, base_name, processed_texts[base_name]))
+    return file_pairs
+
+def preprocess_file_pair(audio_file: str, text_name: str, encoded_text: str, dest_dir: str):
+    # 오디오 파일 처리
+    audio_output = os.path.join(dest_dir, 'audio', os.path.basename(audio_file))
+    os.makedirs(os.path.dirname(audio_output), exist_ok=True)
+    shutil.copy(audio_file, audio_output)
+    # 처리된 텍스트 저장
+    txt_output = os.path.join(dest_dir, 'transcripts', text_name)
+    os.makedirs(os.path.dirname(txt_output), exist_ok=True)
+    with open(txt_output + '.txt', 'w', encoding='utf-8') as output:
+        output.write(encoded_text)
 
 if __name__ == "__main__":
-    nltk.download('averaged_perceptron_tagger_eng')
+    nltk.download('averaged_perceptron_tagger', quiet=True)
     g2p = G2p()
-    argv = sys.argv[1:]
-
-    src_dir = argv[0]
-    dest_dir = argv[1]
-    iter_dir(src_dir, prepreprocess)
+    if len(sys.argv) != 7:
+        print("Usage: python script.py src_dir dest_dir1 dest_dir2 dest_dir3 ratio1:ratio2:ratio3 seed")
+        sys.exit(1)
+    src_dir = sys.argv[1]
+    dest_dirs = sys.argv[2:5]
+    ratios = list(map(float, sys.argv[5].split(':')))
+    seed = int(sys.argv[6])
+    if len(ratios) != 3 or abs(sum(ratios) - 1) > 1e-6:
+        print("Error: Ratios must be three numbers that sum to 1")
+        sys.exit(1)
+    # 시드 설정
+    random.seed(seed)
+    # 텍스트 파일 처리
+    print("Processing text files...")
+    processed_texts = process_text_files(src_dir, g2p)
+    # 파일 쌍 수집
+    print("Collecting file pairs...")
+    file_pairs = collect_file_pairs(src_dir, processed_texts)
+    print(f"Total file pairs found: {len(file_pairs)}")
+    # 파일 쌍 목록을 의사 랜덤하게 섞음
+    random.shuffle(file_pairs)
+    # 비율에 따라 파일 쌍 분배
+    total_pairs = len(file_pairs)
+    split_points = [int(total_pairs * ratios[0]), int(total_pairs * (ratios[0] + ratios[1]))]
+    pair_groups = [
+        file_pairs[:split_points[0]],
+        file_pairs[split_points[0]:split_points[1]],
+        file_pairs[split_points[1]:]
+    ]
+    # 각 그룹의 파일 쌍을 해당 dest_dir로 처리
+    for dest_dir, pairs in zip(dest_dirs, pair_groups):
+        print(f"Processing {len(pairs)} file pairs for {dest_dir}")
+        for audio_file, text_name, encoded_text in tqdm(pairs, desc=f"Processing {dest_dir}"):
+            preprocess_file_pair(audio_file, text_name, encoded_text, dest_dir)
+    print("Processing completed.")
