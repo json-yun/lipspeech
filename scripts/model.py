@@ -1,25 +1,5 @@
 # scripts/model.py
 
-# import torch
-# import torch.nn as nn
-
-# class DeepSpeech(nn.Module):
-#     def __init__(self, input_size, hidden_size, num_classes, num_layers=3):
-#         super(DeepSpeech, self).__init__()
-#         self.lstm = nn.LSTM(input_size, hidden_size, num_layers=num_layers, 
-#                             bidirectional=False, batch_first=True)
-#         self.fc = nn.Linear(hidden_size, num_classes)
-    
-#     def forward(self, x):
-#         # x: (batch, seq_length, input_size)
-#         x, _ = self.lstm(x)  # x: (batch, seq_length, hidden_size)
-#         x = self.fc(x)       # x: (batch, seq_length, num_classes)
-#         return x
-
-
-############################################################################
-# pytorch tutorial version
-
 import torch
 
 __all__ = ["DeepSpeech"]
@@ -35,11 +15,15 @@ class FullyConnected(torch.nn.Module):
     def __init__(self, n_feature: int, n_hidden: int, dropout: float, relu_max_clip: int = 20) -> None:
         super(FullyConnected, self).__init__()
         self.fc = torch.nn.Linear(n_feature, n_hidden, bias=True)
+        self.bn = torch.nn.BatchNorm1d(n_hidden)  # 배치 정규화 레이어 추가
         self.relu_max_clip = relu_max_clip
         self.dropout = dropout
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = self.fc(x)
+        x = x.transpose(1, 2)  # 배치 정규화를 위해 차원 변경
+        x = self.bn(x)
+        x = x.transpose(1, 2)  # 원래 차원으로 복원
         x = torch.nn.functional.relu(x)
         x = torch.nn.functional.hardtanh(x, 0, self.relu_max_clip)
         if self.dropout:

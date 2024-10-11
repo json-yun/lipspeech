@@ -9,20 +9,20 @@ from g2p_en import G2p
 import nltk
 
 phonetic_map = {
-    'AA': 'a', 'AE': 'b', 'AH': 'c', 'AO': 'd', 'AW': 'e', 'AY': 'f', 'B': 'g', 'CH': 'h', 
-    'D': 'i', 'DH': 'j', 'EH': 'k', 'ER': 'l', 'EY': 'm', 'F': 'n', 'G': 'o', 'HH': 'p', 
-    'IH': 'q', 'IY': 'r', 'JH': 's', 'K': 't', 'L': 'u', 'M': 'v', 'N': 'w', 'NG': 'x', 
-    'OW': 'y', 'OY': 'z', 'P': '!', 'R': '@', 'S': '#', 'SH': '$', 'T': '%', 'TH': '^', 
-    'UH': '&', 'UW': '*', 'V': '(', 'W': ')', 'Y': '-', 'Z': '_', 'ZH': '+', ' ': ' ', '\'': ''
+    'AA': 'a', 'AE': 'a', 'AH': 'a', 'AO': 'o', 'AW': 'aw', 'AY': 'ay', 'B': 'b', 'CH': 'c',
+    'D': 'd', 'DH': '#', 'EH': 'e', 'ER': 'r', 'EY': 'ey', 'F': 'f', 'G': 'g', 'HH': 'h', 'IH': 'i',
+    'IY': 'y', 'JH': 'j', 'K': 'k', 'L': 'l', 'M': 'm', 'N': 'n', 'NG': 'q', 'OW': 'ow', 'OY': 'oy',
+    'P': 'p', 'R': 'r', 'S': 's', 'SH': 'x', 'T': 't', 'TH': '#', 'UH': 'u', 'UW': 'uw', 'V': 'v',
+    'W': 'w', 'Y': 'y', 'Z': 'z', 'ZH': 'x', ' ': ' ', '\'': '', '': ''
 }
 
 reversed_phonetic_map = {
-    'a': 'AA', 'b': 'AE', 'c': 'AH', 'd': 'AO', 'e': 'AW', 'f': 'AY', 'g': 'B', 'h': 'CH', 
-    'i': 'D', 'j': 'DH', 'k': 'EH', 'l': 'ER', 'm': 'EY', 'n': 'F', 'o': 'G', 'p': 'HH',
-    'q': 'IH', 'r': 'IY', 's': 'JH', 't': 'K', 'u': 'L', 'v': 'M', 'w': 'N', 'x': 'NG',
-    'y': 'OW', 'z': 'OY', '!': 'P', '@': 'R', '#': 'S', '$': 'SH', '%': 'T', '^': 'TH',
-    '&': 'UH', '*': 'UW', '(': 'V', ')': 'W', '-': 'Y', '_': 'Z', '+': 'ZH', ' ': ' ', '': ''
-}
+    'a': 'AH', 'o': 'AO', 'aw': 'AW', 'ay': 'AY', 'b': 'B', 'c': 'CH', 'd': 'D', '#': 'TH', 
+    'e': 'EH', 'r': 'R', 'ey': 'EY', 'f': 'F', 'g': 'G', 'h': 'HH', 'i': 'IH', 'y': 'Y', 
+    'j': 'JH', 'k': 'K', 'l': 'L', 'm': 'M', 'n': 'N', 'q': 'NG', 'ow': 'OW', 'oy': 'OY',
+    'p': 'P', 's': 'S', 'x': 'ZH', 't': 'T', 'u': 'UH', 'uw': 'UW', 'v': 'V', 'w': 'W', 
+    'z': 'Z', ' ': ' ', '': ''
+    }
 
 # call func each file in child path
 def iter_dir(dir: str, func: callable) -> None:
@@ -54,7 +54,7 @@ def prepreprocess(file_name: str):
                 with open(output_file_name + '.txt', 'w', encoding='utf-8') as output:
                     output.write(encoded)
     else:
-        # shutil.copy(file_name, os.path.join(dest_dir, 'audio'))
+        shutil.copy(file_name, os.path.join(dest_dir, 'audio'))
         pass
 
 if __name__ == "__main__":
