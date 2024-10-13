@@ -1,5 +1,7 @@
 # python scripts/prepreprocess.py src_dir dest_dir
 # example:  python scripts/prepreprocess.py data/dev-clean/ data/train
+#   arguments : src, dst1, dst2, dst3 and proportion for [dst1, dst2, dst3]
+#   usage : python.exe .\script.py src dst1 dst2 dst3 0.6:0.3:0.1 42
 
 import os
 from tqdm import tqdm
@@ -14,7 +16,7 @@ phonetic_map = {
     'D': 'd', 'DH': '#', 'EH': 'e', 'ER': 'r', 'EY': 'ey', 'F': 'f', 'G': 'g', 'HH': 'h', 'IH': 'i',
     'IY': 'y', 'JH': 'j', 'K': 'k', 'L': 'l', 'M': 'm', 'N': 'n', 'NG': 'q', 'OW': 'ow', 'OY': 'oy',
     'P': 'p', 'R': 'r', 'S': 's', 'SH': 'x', 'T': 't', 'TH': '#', 'UH': 'u', 'UW': 'uw', 'V': 'v',
-    'W': 'w', 'Y': 'y', 'Z': 'z', 'ZH': 'x', ' ': ' ', '\'': '', '': ''
+    'W': 'w', 'Y': 'y', 'Z': 'z', 'ZH': 'x', ' ': '_', '\'': '', '': ''
 }
 
 reversed_phonetic_map = {
@@ -22,7 +24,7 @@ reversed_phonetic_map = {
     'e': 'EH', 'r': 'R', 'ey': 'EY', 'f': 'F', 'g': 'G', 'h': 'HH', 'i': 'IH', 'y': 'Y', 
     'j': 'JH', 'k': 'K', 'l': 'L', 'm': 'M', 'n': 'N', 'q': 'NG', 'ow': 'OW', 'oy': 'OY',
     'p': 'P', 's': 'S', 'x': 'ZH', 't': 'T', 'u': 'UH', 'uw': 'UW', 'v': 'V', 'w': 'W', 
-    'z': 'Z', ' ': ' ', '': ''
+    'z': 'Z', ' ': '', '': ''
     }
 def encode_phonetic(phonetics: list[str]) -> list[str]:
     return [phonetic_map[w] if not w.endswith(('0', '1', '2')) else phonetic_map[w[:-1]] for w in phonetics]
@@ -72,20 +74,16 @@ def preprocess_file_pair(audio_file: str, text_name: str, encoded_text: str, des
         output.write(encoded_text)
 
 if __name__ == "__main__":
+    if len(sys.argv) != 5:
+        print("Usage: python script.py src_dir dest_dir1 dest_dir2 dest_dir3")
+        sys.exit(1)
     nltk.download('averaged_perceptron_tagger', quiet=True)
     g2p = G2p()
-    if len(sys.argv) != 7:
-        print("Usage: python script.py src_dir dest_dir1 dest_dir2 dest_dir3 ratio1:ratio2:ratio3 seed")
-        sys.exit(1)
     src_dir = sys.argv[1]
     dest_dirs = sys.argv[2:5]
-    ratios = list(map(float, sys.argv[5].split(':')))
-    seed = int(sys.argv[6])
-    if len(ratios) != 3 or abs(sum(ratios) - 1) > 1e-6:
-        print("Error: Ratios must be three numbers that sum to 1")
-        sys.exit(1)
-    # 시드 설정
-    random.seed(seed)
+    # seed = int(sys.argv[6])
+    # # 시드 설정
+    # random.seed(seed)
     # 텍스트 파일 처리
     print("Processing text files...")
     processed_texts = process_text_files(src_dir, g2p)
@@ -94,15 +92,16 @@ if __name__ == "__main__":
     file_pairs = collect_file_pairs(src_dir, processed_texts)
     print(f"Total file pairs found: {len(file_pairs)}")
     # 파일 쌍 목록을 의사 랜덤하게 섞음
-    random.shuffle(file_pairs)
+    # random.shuffle(file_pairs)
     # 비율에 따라 파일 쌍 분배
     total_pairs = len(file_pairs)
-    split_points = [int(total_pairs * ratios[0]), int(total_pairs * (ratios[0] + ratios[1]))]
-    pair_groups = [
-        file_pairs[:split_points[0]],
-        file_pairs[split_points[0]:split_points[1]],
-        file_pairs[split_points[1]:]
-    ]
+    pair_groups = [[], [], []]
+    for i in range(0, total_pairs, 5):
+        pair_groups[0].extend(file_pairs[i:i+3])
+    for i in range(3, total_pairs, 5):
+        pair_groups[1].extend(file_pairs[i:i+1])
+    for i in range(4, total_pairs, 5):
+        pair_groups[2].extend(file_pairs[i:i+1])
     # 각 그룹의 파일 쌍을 해당 dest_dir로 처리
     for dest_dir, pairs in zip(dest_dirs, pair_groups):
         print(f"Processing {len(pairs)} file pairs for {dest_dir}")

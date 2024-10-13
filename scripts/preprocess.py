@@ -74,20 +74,23 @@ if __name__ == '__main__':
     vocab_file = 'data/vocab.txt'
     
     # 전체 타겟을 읽어 vocab 생성
-    transcripts = []
-    transcript_dir = os.path.join(preprocess_input_dir, 'transcripts')
-    for file_name in os.listdir(transcript_dir):
-        if file_name.endswith('.txt'):
-            with open(os.path.join(transcript_dir, file_name), 'r', encoding='utf-8') as f:
-                transcript = f.read().strip().lower()
-                transcripts.append(transcript)
-
     if "--build-vocab" in argv:
+        transcripts = []
+        transcript_dir = os.path.join(preprocess_input_dir, 'transcripts')
+        for file_name in os.listdir(transcript_dir):
+            if file_name.endswith('.txt'):
+                with open(os.path.join(transcript_dir, file_name), 'r', encoding='utf-8') as f:
+                    transcript = f.read().strip().lower()
+                    transcripts.append(transcript)
+
         vocab = build_vocab(transcripts)
     
-    # 저장된 vocab을 나중에 사용하기 위해 파일로 저장
-    with open(vocab_file, 'w', encoding='utf-8') as f:
-        f.write(' '.join(vocab))
+        # 저장된 vocab을 나중에 사용하기 위해 파일로 저장
+        with open(vocab_file, 'w', encoding='utf-8') as f:
+            f.write(' '.join(vocab))
+    else:
+        with open(vocab_file, 'r', encoding='utf-8') as f:
+            vocab = f.readline().split()
     
     # 전처리 수행
     preprocess_data(preprocess_input_dir, preprocess_output_dir, vocab_file, n_mfcc=40)
